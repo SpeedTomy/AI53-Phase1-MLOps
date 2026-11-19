@@ -39,6 +39,12 @@ Les images, caches, environnements et données MLflow ne doivent pas entrer dans
 versions résolues et les sources ; `.venv/` contient leur installation locale et se
 recrée à partir du verrou. Le verrou fourni est conservé.
 
+Les tests du starter, avant correction, donnent **11 échecs et 8 réussites**.
+Un défaut supplémentaire du script de setup est apparu sur macOS : résoudre le
+lien symbolique de `.venv/bin/python` pointe vers le Python de base et produit un
+faux échec. Le contrôle utilise désormais `sys.prefix` pour identifier l'environnement
+actif. Cela ne change ni le verrou ni les tests du cours.
+
 **Checkpoint 2.** `random_state=42` contrôle les tirages dans un environnement donné.
 Il ne garantit pas une identité bit à bit entre architectures CPU/GPU, versions de
 bibliothèques ou algorithmes numériques différents. Les réglages cuDNN limitent

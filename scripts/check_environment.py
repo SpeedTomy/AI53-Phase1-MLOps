@@ -16,7 +16,9 @@ def main() -> int:
     print(f"Platform: {platform.platform()} ({platform.machine()})")
     if not (3, 11) <= sys.version_info[:2] < (3, 13):
         errors.append("Use Python 3.12 for this course (supported: 3.11/3.12).")
-    if not Path(sys.executable).resolve().is_relative_to((root / '.venv').resolve()):
+    # On Unix the venv executable is normally a symlink to the base Python.
+    # sys.prefix identifies the active environment without following that link.
+    if Path(sys.prefix).resolve() != (root / '.venv').resolve():
         errors.append("Interpreter is outside the project .venv. Run with uv run --locked.")
     if Path.cwd().resolve() != root:
         errors.append(f"Run from the project root: {root}")
