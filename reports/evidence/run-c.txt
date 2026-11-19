@@ -1,0 +1,33 @@
+'data/raw.dvc' didn't change, skipping
+Stage 'validate' didn't change, skipping
+Stage 'prepare' didn't change, skipping
+Running stage 'train':
+> uv run --locked python -m src.train
+/Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops/.venv/lib/python3.12/site-packages/mlflow/data/dataset_source_registry.py:148: UserWarning: The specified dataset source can be interpreted in multiple ways: LocalArtifactDatasetSource, LocalArtifactDatasetSource. MLflow will assume that this is a LocalArtifactDatasetSource source.
+  return _dataset_source_registry.resolve(
+Epoch 01/4 | train_loss=1.0665 | val_loss=0.9981 | val_acc=0.5489 | val_macro_f1=0.5462
+Epoch 02/4 | train_loss=0.9342 | val_loss=0.8831 | val_acc=0.6165 | val_macro_f1=0.6045
+Epoch 03/4 | train_loss=0.8959 | val_loss=0.8482 | val_acc=0.6541 | val_macro_f1=0.6511
+Epoch 04/4 | train_loss=0.8823 | val_loss=0.8393 | val_acc=0.6241 | val_macro_f1=0.6139
+2026/11/19 13:15:38 INFO mlflow.utils.uv_utils: Detected uv project: found uv.lock and pyproject.toml in /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops
+2026/11/19 13:15:38 WARNING mlflow.pytorch: Saving pytorch model by Pickle or CloudPickle format requires exercising caution because these formats rely on Python's object serialization mechanism, which can execute arbitrary code during deserialization. The recommended safe alternative is to set `serialization_format` to 'pt2' to save the PyTorch model using the safe graph model format.
+2026/11/19 13:15:38 INFO mlflow.utils.uv_utils: Detected uv project: found uv.lock and pyproject.toml in /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops
+2026/11/19 13:15:38 INFO mlflow.utils.environment: Detected uv project at /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops. Attempting to export requirements via 'uv export'.
+2026/11/19 13:15:38 INFO mlflow.utils.uv_utils: Exported 166 dependencies via uv
+2026/11/19 13:15:38 INFO mlflow.utils.environment: Successfully exported 166 requirements from uv project. Skipping package capture based inference.
+2026/11/19 13:15:38 INFO mlflow.utils.uv_utils: Extracted 1 private index URL(s) from uv.lock
+2026/11/19 13:15:38 WARNING mlflow.utils.uv_utils: Private package indexes detected in uv lockfile. Ensure credentials are available at model load time via UV_INDEX_* environment variables or .netrc file.
+2026/11/19 13:15:39 WARNING mlflow.utils.environment: Failed to resolve installed pip version. ``pip`` will be added to conda.yaml environment spec without a version specifier.
+Training complete. Run ID: ed08edffe9c248df894db2ec166df2d0; model: models:/m-19d22533ed0242418822b517a05a19b1
+🏃 View run cnn_aug-False_dropout-0.5_lr-0.001 at: http://127.0.0.1:5000/#/experiments/1/runs/ed08edffe9c248df894db2ec166df2d0
+🧪 View experiment at: http://127.0.0.1:5000/#/experiments/1
+Updating lock file 'dvc.lock'
+
+To track the changes with git, run:
+
+	git add dvc.lock
+
+To enable auto staging, run:
+
+	dvc config core.autostage true
+Use `dvc push` to send your updates to remote storage.

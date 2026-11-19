@@ -260,5 +260,136 @@
       "params": null
     },
     "status": "FINISHED"
+  },
+  {
+    "artifacts": [
+      "reports/run_manifest.json",
+      "reports/train_summary.json",
+      "reports/training_curves.png"
+    ],
+    "dataset": {
+      "digest": "8e57ebba",
+      "name": "bean-training",
+      "profile": "{\"num_rows\": 1034, \"num_elements\": 4136}",
+      "schema": "{\"mlflow_colspec\": [{\"type\": \"string\", \"name\": \"relative_path\", \"required\": true}, {\"type\": \"string\", \"name\": \"label\", \"required\": true}, {\"type\": \"string\", \"name\": \"source_sha256\", \"required\": true}, {\"type\": \"string\", \"name\": \"processed_sha256\", \"required\": true}]}",
+      "source": "{\"uri\": \"data/processed/manifests/train.csv\"}",
+      "source_type": "local"
+    },
+    "history": {
+      "train_loss": [
+        {
+          "step": 1,
+          "value": 1.0665129020781305
+        },
+        {
+          "step": 2,
+          "value": 0.9341546701739328
+        },
+        {
+          "step": 3,
+          "value": 0.8958984090004484
+        },
+        {
+          "step": 4,
+          "value": 0.8823498632737239
+        }
+      ],
+      "val_accuracy": [
+        {
+          "step": 1,
+          "value": 0.5488721804511278
+        },
+        {
+          "step": 2,
+          "value": 0.6165413533834586
+        },
+        {
+          "step": 3,
+          "value": 0.6541353383458647
+        },
+        {
+          "step": 4,
+          "value": 0.6240601503759399
+        }
+      ],
+      "val_loss": [
+        {
+          "step": 1,
+          "value": 0.9981182208634857
+        },
+        {
+          "step": 2,
+          "value": 0.8830891731090116
+        },
+        {
+          "step": 3,
+          "value": 0.8481800578590623
+        },
+        {
+          "step": 4,
+          "value": 0.8393323403552062
+        }
+      ],
+      "val_macro_f1": [
+        {
+          "step": 1,
+          "value": 0.5461861930898397
+        },
+        {
+          "step": 2,
+          "value": 0.6045154222724315
+        },
+        {
+          "step": 3,
+          "value": 0.6510969691349439
+        },
+        {
+          "step": 4,
+          "value": 0.6138597561277973
+        }
+      ]
+    },
+    "input_example": {
+      "artifact_path": "input_example.json",
+      "serving_input_path": "serving_input_example.json",
+      "type": "ndarray"
+    },
+    "label": "C",
+    "metadata": {
+      "class_names": [
+        "angular_leaf_spot",
+        "bean_rust",
+        "healthy"
+      ],
+      "image_size": 96
+    },
+    "metrics": {
+      "train_loss": 0.8823498632737239,
+      "training_seconds": 13.290312166000149,
+      "val_accuracy": 0.6240601503759399,
+      "val_loss": 0.8393323403552062,
+      "val_macro_f1": 0.6138597561277973
+    },
+    "model_uri": "runs:/ed08edffe9c248df894db2ec166df2d0/bean-cnn",
+    "parameters": {
+      "augmentation_enabled": "False",
+      "batch_size": "32",
+      "device": "cpu",
+      "dropout": "0.5",
+      "epochs": "4",
+      "horizontal_flip": "0.5",
+      "image_size": "96",
+      "learning_rate": "0.001",
+      "random_state": "42",
+      "rotation_degrees": "10.0",
+      "training_data_identity": "8fa943ff6c17a3c874d2b152e9d7980602a5cd50c0d8156625bd00590a3d8c6c"
+    },
+    "run_id": "ed08edffe9c248df894db2ec166df2d0",
+    "signature": {
+      "inputs": "[{\"type\": \"tensor\", \"tensor-spec\": {\"dtype\": \"float32\", \"shape\": [-1, 3, 96, 96]}}]",
+      "outputs": "[{\"type\": \"tensor\", \"tensor-spec\": {\"dtype\": \"float32\", \"shape\": [-1, 3]}}]",
+      "params": null
+    },
+    "status": "FINISHED"
   }
 ]

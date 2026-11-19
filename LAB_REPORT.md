@@ -164,7 +164,33 @@ Les valeurs finales correspondent bien à la quatrième époque.
 
 ## 7 — Comparaison contrôlée
 
-À compléter à partir des trois Runs MLflow terminés, sans utiliser les scores test.
+| Run | Changement par rapport à A | Val. accuracy | Val. macro-F1 | Val. loss | Temps (s) | Run ID |
+|---|---|---|---|---|---|---|
+| A | Baseline | 0.639098 | 0.625419 | 0.833060 | 13.068 | `116957febf994489ac92baa3458f3d34` |
+| B | Learning rate 0,0003 | 0.616541 | 0.609117 | 0.892707 | 13.358 | `37c50006d9d548aba01e852501fa6aa6` |
+| C | Dropout 0,50 | 0.624060 | 0.613860 | 0.839332 | 13.290 | `ed08edffe9c248df894db2ec166df2d0` |
+
+Les trois Runs sont FINISHED. Leur identité train/validation est identique :
+`8fa943ff6c17a3c874d2b152e9d7980602a5cd50c0d8156625bd00590a3d8c6c`.
+Les différences de paramètres MLflow ont été vérifiées : B ne diffère de A que par
+`learning_rate` ; C ne diffère de A que par `dropout`. Les trois ont les onze
+paramètres, les quatre points par série de métriques, le Dataset, les trois artefacts
+et le modèle `bean-cnn` avec signature et exemple d'entrée attendus.
+Les courbes et manifestes individuels sont conservés dans `reports/runs/A`, `B`, `C`.
+
+**B face à A.** La macro-F1 passe de 0,625419 à 0,609117 et la loss finale de
+0,833060 à 0,892680. Cela est compatible avec une convergence plus lente sur quatre
+époques. Les deux losses diminuent régulièrement ; ces observations ne prouvent
+pas qu'un plus petit taux serait moins bon avec plus d'époques.
+
+**C face à A.** La macro-F1 finale descend à 0,613860. L'hypothèse d'un gain avec
+plus de dropout n'est pas confirmée dans ce protocole ; un apprentissage un peu
+plus lent reste plausible. C atteint 0,651058 à l'époque 3, puis baisse à l'époque 4.
+A baisse aussi entre les époques 3 et 4. On compare bien les modèles de dernière
+époque enregistrés, sans sélectionner rétrospectivement une époque non livrée.
+Une fluctuation sur 133 images ne suffit pas à diagnostiquer à elle seule le
+surapprentissage. A reste le meilleur selon la règle fixée avant entraînement.
+
 
 **Checkpoint 6.** La macro-F1 donne le même poids aux trois classes et combine
 précision et rappel ; elle permet d'éviter qu'une classe moins bien reconnue soit
