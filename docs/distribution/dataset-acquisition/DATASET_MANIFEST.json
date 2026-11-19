@@ -1,0 +1,34 @@
+{
+  "dataset": "iBean / Beans - Bean Disease Dataset",
+  "license": "MIT",
+  "classes": [
+    "angular_leaf_spot",
+    "bean_rust",
+    "healthy"
+  ],
+  "splits": {
+    "train": {
+      "images": 1034,
+      "bytes": 143812152,
+      "filename": "train.zip",
+      "sha256": "284fe8456ce20687f4367ae7ad94a64577e7f9fde2c2c6b1c74340ab5dc82715"
+    },
+    "validation": {
+      "images": 133,
+      "bytes": 18504213,
+      "filename": "validation.zip",
+      "sha256": "90b7aa1c26d91d9afff07a30bbc67a5ea34f1f1397f068d8675be09d7d0c602d"
+    },
+    "test": {
+      "images": 128,
+      "bytes": 17708541,
+      "filename": "test.zip",
+      "sha256": "ca67b15d960d1e2fd9d23fd8498ce86818ead90755c630a43baf19ec4af09312"
+    }
+  },
+  "total_images": 1295,
+  "total_archive_bytes": 180024906,
+  "original_project": "https://github.com/AI-Lab-Makerere/ibean",
+  "primary_archive_base": "https://huggingface.co/datasets/AI-Lab-Makerere/beans/resolve/main/data/",
+  "fallback_mirror": "https://storage.googleapis.com/ibeans/"
+}
