@@ -1,0 +1,7 @@
+train.zip: SHA-256 OK
+validation.zip: SHA-256 OK
+test.zip: SHA-256 OK
+train     : 1034 images OK
+validation:  133 images OK
+test      :  128 images OK
+Dataset ready in data/raw/.

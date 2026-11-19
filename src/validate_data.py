@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from PIL import Image
 
+# Milestone 6: a comment changes the code hash, not the deterministic quality report.
 EXPECTED_SPLITS = {"train": 1034, "validation": 133, "test": 128}
 EXPECTED_CLASSES = {"angular_leaf_spot", "bean_rust", "healthy"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}

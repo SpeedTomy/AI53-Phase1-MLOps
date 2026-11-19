@@ -1,0 +1,110 @@
+'data/raw.dvc' didn't change, skipping
+Running stage 'validate':
+> uv run --locked python -m src.validate_data
+{
+  "classes": [
+    "angular_leaf_spot",
+    "bean_rust",
+    "healthy"
+  ],
+  "splits": {
+    "test": {
+      "class_counts": {
+        "angular_leaf_spot": 43,
+        "bean_rust": 43,
+        "healthy": 42
+      },
+      "images": 128
+    },
+    "train": {
+      "class_counts": {
+        "angular_leaf_spot": 345,
+        "bean_rust": 348,
+        "healthy": 341
+      },
+      "images": 1034
+    },
+    "validation": {
+      "class_counts": {
+        "angular_leaf_spot": 44,
+        "bean_rust": 45,
+        "healthy": 44
+      },
+      "images": 133
+    }
+  },
+  "status": "PASS",
+  "total_images": 1295
+}
+Generating lock file 'dvc.lock'
+Updating lock file 'dvc.lock'
+
+Running stage 'prepare':
+> uv run --locked python -m src.prepare
+{
+  "classes": [
+    "angular_leaf_spot",
+    "bean_rust",
+    "healthy"
+  ],
+  "image_size": 96,
+  "splits": {
+    "test": {
+      "class_counts": {
+        "angular_leaf_spot": 43,
+        "bean_rust": 43,
+        "healthy": 42
+      },
+      "images": 128
+    },
+    "train": {
+      "class_counts": {
+        "angular_leaf_spot": 345,
+        "bean_rust": 348,
+        "healthy": 341
+      },
+      "images": 1034
+    },
+    "validation": {
+      "class_counts": {
+        "angular_leaf_spot": 44,
+        "bean_rust": 45,
+        "healthy": 44
+      },
+      "images": 133
+    }
+  }
+}
+Updating lock file 'dvc.lock'
+
+Running stage 'train':
+> uv run --locked python -m src.train
+2026/11/19 13:12:37 INFO mlflow.tracking.fluent: Experiment with name 'bean-image-classification' does not exist. Creating a new experiment.
+/Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops/.venv/lib/python3.12/site-packages/mlflow/data/dataset_source_registry.py:148: UserWarning: The specified dataset source can be interpreted in multiple ways: LocalArtifactDatasetSource, LocalArtifactDatasetSource. MLflow will assume that this is a LocalArtifactDatasetSource source.
+  return _dataset_source_registry.resolve(
+Epoch 01/4 | train_loss=1.0639 | val_loss=0.9812 | val_acc=0.5639 | val_macro_f1=0.5562
+Epoch 02/4 | train_loss=0.9123 | val_loss=0.8819 | val_acc=0.6241 | val_macro_f1=0.6119
+Epoch 03/4 | train_loss=0.8874 | val_loss=0.8471 | val_acc=0.6466 | val_macro_f1=0.6445
+Epoch 04/4 | train_loss=0.8673 | val_loss=0.8331 | val_acc=0.6391 | val_macro_f1=0.6254
+2026/11/19 13:12:51 INFO mlflow.utils.uv_utils: Detected uv project: found uv.lock and pyproject.toml in /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops
+2026/11/19 13:12:51 WARNING mlflow.pytorch: Saving pytorch model by Pickle or CloudPickle format requires exercising caution because these formats rely on Python's object serialization mechanism, which can execute arbitrary code during deserialization. The recommended safe alternative is to set `serialization_format` to 'pt2' to save the PyTorch model using the safe graph model format.
+2026/11/19 13:12:51 INFO mlflow.utils.uv_utils: Detected uv project: found uv.lock and pyproject.toml in /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops
+2026/11/19 13:12:51 INFO mlflow.utils.environment: Detected uv project at /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops. Attempting to export requirements via 'uv export'.
+2026/11/19 13:12:51 INFO mlflow.utils.uv_utils: Exported 166 dependencies via uv
+2026/11/19 13:12:51 INFO mlflow.utils.environment: Successfully exported 166 requirements from uv project. Skipping package capture based inference.
+2026/11/19 13:12:51 INFO mlflow.utils.uv_utils: Extracted 1 private index URL(s) from uv.lock
+2026/11/19 13:12:51 WARNING mlflow.utils.uv_utils: Private package indexes detected in uv lockfile. Ensure credentials are available at model load time via UV_INDEX_* environment variables or .netrc file.
+2026/11/19 13:12:52 WARNING mlflow.utils.environment: Failed to resolve installed pip version. ``pip`` will be added to conda.yaml environment spec without a version specifier.
+Training complete. Run ID: 116957febf994489ac92baa3458f3d34; model: models:/m-58e8b5d605034b88bf5bc6bc4a01d5aa
+🏃 View run cnn_aug-False_dropout-0.3_lr-0.001 at: http://127.0.0.1:5000/#/experiments/1/runs/116957febf994489ac92baa3458f3d34
+🧪 View experiment at: http://127.0.0.1:5000/#/experiments/1
+Updating lock file 'dvc.lock'
+
+To track the changes with git, run:
+
+	git add dvc.lock
+
+To enable auto staging, run:
+
+	dvc config core.autostage true
+Use `dvc push` to send your updates to remote storage.

@@ -133,6 +133,27 @@ Une régularisation plus forte peut limiter le surapprentissage, mais peut aussi
 ralentir l'apprentissage de ce petit réseau sur quatre époques. Graine, données,
 batch, augmentation et nombre d'époques sont identiques à A.
 
+### Observations DVC
+
+| Vérification réellement exécutée | VALIDATE | PREPARE | TRAIN | EVALUATE |
+|---|---|---|---|---|
+| Première baseline A | RERUN | RERUN | RERUN | NOT RUN |
+| Même commande sans changement | REUSED | REUSED | REUSED | NOT RUN |
+| Commentaire seul dans le validateur | RERUN | REUSED | REUSED | NOT RUN |
+
+Les extraits complets sont dans `reports/evidence/`. Sans changement, DVC affiche
+`Stage 'validate' didn't change, skipping`, puis la même chose pour `prepare` et
+`train`. Après le commentaire, il affiche `Running stage 'validate'`, puis ignore
+`prepare` et `train`. Les SHA-256 du rapport qualité avant/après sont identiques.
+Cela confirme l'invalidation par contenu ; aucun nouveau Run MLflow n'est créé
+par ces deux contrôles. `dvc repro train` ne parcourt pas la branche EVALUATE.
+
+Run A : `116957febf994489ac92baa3458f3d34`, quatre époques terminées, accuracy
+validation 0,639098, macro-F1 0,625419 et 13,068 secondes d'entraînement mesuré.
+La provenance indique `dirty=true` : lors du premier passage DVC, les nouvelles
+sorties de PREPARE et `dvc.lock` ne sont pas encore commitées. Le code utilisé était
+bien sauvegardé au commit `c9ee6e6`. Le drapeau est conservé tel qu'observé.
+
 ## 7 — Comparaison contrôlée
 
 À compléter à partir des trois Runs MLflow terminés, sans utiliser les scores test.

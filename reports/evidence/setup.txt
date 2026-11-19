@@ -1,0 +1,19 @@
+Python: 3.12.14
+Executable: /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops/.venv/bin/python
+Platform: macOS-26.4.1-arm64-arm-64bit (arm64)
+git: /usr/bin/git
+uv: /Users/mt/Documents/Codes/UTBM Semester AI/AI53/phase1_mlops/../.tools/uv-env/bin/uv
+torch: 2.11.0
+torchvision: 0.26.0
+mlflow: 3.17.1
+dvc: 3.67.1
+numpy: 2.5.4
+pandas: 2.3.3
+yaml: 6.0.3
+PIL: 12.3.0
+sklearn: 1.9.1
+matplotlib: 3.11.2
+pytest: 8.4.2
+CUDA available: False (False is expected for Core)
+CPU tensor operation: PASS
+SETUP PASS
