@@ -201,7 +201,19 @@ général d'un hyperparamètre.
 
 ## 8 — Sélection et test final
 
-À compléter après comparaison de validation et gel du Run ID.
+**Choix gelé avant tout score test : Run A**, `116957febf994489ac92baa3458f3d34`,
+macro-F1 de validation 0,625419. Aucun départage n'est nécessaire. L'accuracy et la
+loss sont aussi favorables à A ; elles n'ont pas remplacé la règle principale.
+Le compromis est un score encore modeste et une comparaison limitée à une seule
+graine : le pipeline est traçable, mais ces essais ne démontrent pas une robustesse
+agronomique en dehors de ce jeu de données.
+
+Seul `selection.run_id` est modifié pour cette étape. Les paramètres courants
+restent ceux de C, comme demandé ; le checkpoint `models/model.pt` est donc celui
+de C. Le test doit charger le modèle de A depuis MLflow, ce qui vérifie effectivement
+la séparation entre dernier entraînement et sélection finale.
+
+Résultats test à ajouter après cette décision committée.
 
 ## État de remise
 
