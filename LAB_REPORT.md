@@ -140,6 +140,7 @@ batch, augmentation et nombre d'époques sont identiques à A.
 | Première baseline A | RERUN | RERUN | RERUN | NOT RUN |
 | Même commande sans changement | REUSED | REUSED | REUSED | NOT RUN |
 | Commentaire seul dans le validateur | RERUN | REUSED | REUSED | NOT RUN |
+| Taux à 0,0003 pour B | REUSED | REUSED | RERUN | NOT RUN |
 
 Les extraits complets sont dans `reports/evidence/`. Sans changement, DVC affiche
 `Stage 'validate' didn't change, skipping`, puis la même chose pour `prepare` et
@@ -153,6 +154,13 @@ validation 0,639098, macro-F1 0,625419 et 13,068 secondes d'entraînement mesur�
 La provenance indique `dirty=true` : lors du premier passage DVC, les nouvelles
 sorties de PREPARE et `dvc.lock` ne sont pas encore commitées. Le code utilisé était
 bien sauvegardé au commit `c9ee6e6`. Le drapeau est conservé tel qu'observé.
+
+Pour B, seuls les paramètres de TRAIN changent : DVC ignore VALIDATE et PREPARE,
+puis exécute TRAIN. C'est conforme à la prédiction. Run B :
+`37c50006d9d548aba01e852501fa6aa6`. `scripts/inspect_runs.py` a vérifié dans MLflow
+pour A et B les onze paramètres, le Dataset de contexte training, les quatre séries
+avec steps 1–4, les trois artefacts, la signature, l'exemple d'entrée et les métadonnées.
+Les valeurs finales correspondent bien à la quatrième époque.
 
 ## 7 — Comparaison contrôlée
 

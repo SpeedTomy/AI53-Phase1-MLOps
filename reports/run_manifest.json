@@ -9,7 +9,7 @@
     "dropout": 0.3,
     "epochs": 4,
     "image_size": 96,
-    "learning_rate": 0.001,
+    "learning_rate": 0.0003,
     "random_state": 42
   },
   "data": {
@@ -30,11 +30,11 @@
   },
   "execution": {
     "device": "cpu",
-    "mlflow_run_id": "116957febf994489ac92baa3458f3d34",
+    "mlflow_run_id": "37c50006d9d548aba01e852501fa6aa6",
     "random_state": 42
   },
   "git": {
-    "commit_sha": "c9ee6e6d2e2e89a193ed501f24945127f52e0e9f",
+    "commit_sha": "ae98ef82fbebc99cbb631cb5bcc3318d3ba17783",
     "dirty": true,
     "status": "available"
   }
