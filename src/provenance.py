@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import platform
+import subprocess
+from importlib import metadata
 from pathlib import Path
+
+import torch
 
 
 def training_data_identity(
@@ -29,20 +34,43 @@ def training_data_identity(
 
 
 def build_run_manifest(params: dict, device: str, mlflow_run_id: str) -> dict:
-    """Build experiment provenance metadata.
+    """Capture code, data and execution state before training writes outputs."""
+    git = {"commit_sha": None, "dirty": None, "status": "unavailable"}
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+        )
+        status = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=False
+        )
+        if commit.returncode == 0 and status.returncode == 0:
+            git.update(commit_sha=commit.stdout.strip(), dirty=bool(status.stdout.strip()),
+                       status="available")
+    except OSError:
+        # A missing Git executable must not discard the other provenance fields.
+        pass
 
-    TODO: collect at least:
-      - Git commit SHA and whether the working tree is dirty;
-      - identity of the prepared training + validation manifests;
-      - Python, PyTorch, torchvision, DVC and MLflow versions;
-      - OS/platform and CUDA runtime (when available);
-      - compute device; random seed; image size; training parameters;
-      - MLflow Run ID.
-
-    Hints: subprocess, platform, importlib.metadata, torch,
-    training_data_identity().
-    """
-    raise NotImplementedError("Implement run provenance capture")
+    environment = {"python": platform.python_version(), "platform": platform.platform(),
+                   "machine": platform.machine(), "cuda_runtime": torch.version.cuda,
+                   "torch_num_threads": torch.get_num_threads()}
+    for package in ("torch", "torchvision", "dvc", "mlflow", "numpy", "pillow"):
+        try:
+            environment[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:
+            environment[package] = "unavailable"
+    return {
+        "git": git,
+        "data": {"training_data_identity": training_data_identity()},
+        "environment": environment,
+        "configuration": {
+            "image_size": int(params["data"]["image_size"]),
+            **params["train"],
+            "augmentation": dict(params["augmentation"]),
+        },
+        "execution": {"device": str(device),
+                      "random_state": int(params["train"]["random_state"]),
+                      "mlflow_run_id": mlflow_run_id},
+    }
 
 
 def write_run_manifest(params: dict, device: str, mlflow_run_id: str, path: Path) -> dict:

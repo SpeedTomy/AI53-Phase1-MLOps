@@ -7,10 +7,12 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import mlflow
+import mlflow.pytorch
 import pandas as pd
 import torch
 import yaml
 from sklearn.metrics import accuracy_score, f1_score
+from mlflow.models import infer_signature
 from torch import nn
 from torch.optim import Optimizer
 
@@ -154,40 +156,29 @@ def main() -> None:
     # 6. ONE MLFLOW RUN = ONE TRAIN EXECUTION
     # =========================================================
     with mlflow.start_run(run_name=run_name) as run:
-        # -----------------------------------------------------
-        # TODO 1 - CAPTURE PROVENANCE FIRST
-        # -----------------------------------------------------
-        # Call write_run_manifest(...) HERE, before training creates
-        # model.pt, summaries, curves or other generated outputs.
-        # Store the returned dictionary in `run_manifest`, then read
-        # `training_data_identity` from run_manifest["data"].
-        #
-        # Do not postpone provenance capture until the end of TRAIN.
-        # -----------------------------------------------------
-        # run_manifest = ...
-        # training_identity = ...
+        run_manifest = write_run_manifest(
+            params, str(device), run.info.run_id, Path("reports/run_manifest.json")
+        )
+        training_identity = run_manifest["data"]["training_data_identity"]
+        mlflow.log_params({
+            "image_size": int(params["data"]["image_size"]),
+            **params["train"],
+            "augmentation_enabled": bool(params["augmentation"]["enabled"]),
+            "horizontal_flip": float(params["augmentation"]["horizontal_flip"]),
+            "rotation_degrees": float(params["augmentation"]["rotation_degrees"]),
+            "device": str(device),
+            "training_data_identity": training_identity,
+        })
 
-        # -----------------------------------------------------
-        # TODO 2 - LOG RUN PARAMETERS
-        # -----------------------------------------------------
-        # Log at least:
-        # image_size, batch_size, epochs, learning_rate, dropout,
-        # random_state, augmentation_enabled, horizontal_flip,
-        # rotation_degrees, device, training_data_identity.
-        # -----------------------------------------------------
-
-        # -----------------------------------------------------
-        # TODO 3 - LOG TRAINING DATASET INPUT
-        # -----------------------------------------------------
         train_manifest_df = pd.read_csv(train_manifest_path)
         if "label" not in train_manifest_df.columns:
             raise ValueError("Training manifest must contain a 'label' column")
 
-        # Create an MLflow Dataset with mlflow.data.from_pandas(...):
-        #   name    = "bean-training"
-        #   targets = "label"
-        # Then register it with mlflow.log_input(..., context="training").
-        # -----------------------------------------------------
+        training_dataset = mlflow.data.from_pandas(
+            train_manifest_df, source=train_manifest_path.as_posix(),
+            name="bean-training", targets="label",
+        )
+        mlflow.log_input(training_dataset, context="training")
 
         # =====================================================
         # 7. TRAIN + VALIDATE
@@ -215,11 +206,11 @@ def main() -> None:
                 f"val_macro_f1={val_metrics['macro_f1']:.4f}"
             )
 
-            # TODO 4 - Log train_loss, val_loss,
-            # val_accuracy and val_macro_f1 with step=epoch.
+            mlflow.log_metrics({name: values[-1] for name, values in history.items()},
+                               step=epoch)
 
         training_seconds = time.perf_counter() - start
-        # TODO 5 - Log training_seconds to MLflow.
+        mlflow.log_metric("training_seconds", training_seconds)
 
         # =====================================================
         # 8. CREATE LOCAL OUTPUTS
@@ -271,35 +262,25 @@ def main() -> None:
         # =====================================================
         # 9. LOG ARTIFACTS
         # =====================================================
-        # TODO 6 - Log:
-        #   reports/training_curves.png
-        #   reports/train_summary.json
-        #   reports/run_manifest.json
-        #
-        # Important: run_manifest.json must ALREADY EXIST here because
-        # write_run_manifest(...) created it at the beginning of the Run.
-        # Do NOT create the provenance manifest here.
+        for filename in ("training_curves.png", "train_summary.json", "run_manifest.json"):
+            mlflow.log_artifact(str(Path("reports") / filename), artifact_path="reports")
 
         # =====================================================
         # 10. LOG FINAL PYTORCH MODEL
         # =====================================================
-        # TODO 7 -
-        #   1. obtain an input example from val_loader;
-        #   2. compute the corresponding output example;
-        #   3. infer the model signature;
-        #   4. log the final model as name="bean-cnn";
-        #   5. include input_example, signature and metadata containing
-        #      class_names + image_size.
-        #
-        # Use serialization_format="pickle" and code_paths=["src"] for
-        # the course eager BeanCNN. Import mlflow.pytorch and infer_signature.
-        # Export a CPU model in evaluation mode with CPU examples.
-        # Do not use the test set.
-
-        print(
-            "Training complete. Resolve every TODO block before "
-            "starting the controlled experiment comparison."
+        model = model.to("cpu").eval()
+        example_tensor = next(iter(val_loader))[0][:1].cpu()
+        with torch.no_grad():
+            output_example = model(example_tensor).numpy()
+        input_example = example_tensor.numpy()
+        signature = infer_signature(input_example, output_example)
+        model_info = mlflow.pytorch.log_model(
+            model, name="bean-cnn", serialization_format="pickle", code_paths=["src"],
+            input_example=input_example, signature=signature,
+            metadata={"class_names": list(class_names),
+                      "image_size": int(params["data"]["image_size"])},
         )
+        print(f"Training complete. Run ID: {run.info.run_id}; model: {model_info.model_uri}")
 
 
 if __name__ == "__main__":
