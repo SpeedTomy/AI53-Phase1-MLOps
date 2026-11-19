@@ -58,7 +58,17 @@ pointeurs DVC. Le remote DVC stocke les octets des données et sorties mises en 
 
 ## 3 — Barrière qualité
 
-À compléter avec les résultats d'exécution du validateur.
+Le validateur décode les pixels de toutes les images. Résultat : **PASS**, 1 295
+images, soit 1 034 train, 133 validation et 128 test. Les classes sont exactement
+`angular_leaf_spot`, `bean_rust`, `healthy`, toutes non vides. Le rapport est trié
+et sans horodatage. Les tests couvrent fichier corrompu, split absent, classe
+supplémentaire, classe vide, mauvais effectif et stabilité du rapport.
+
+Le cache système DVC par défaut pointait vers `/opt/homebrew/var/cache/dvc`, hors
+zone d'écriture de cette session. Un cache local dans `.tools/` est configuré dans
+`.dvc/config.local` (hors Git). Le remote `lab-data` est le dossier voisin
+`../ai53-phase1-dvc-storage` : **1 297 objets transférés** lors de la première sauvegarde
+(les 1 295 images et leurs métadonnées de cache). Ce remote reste local à la machine.
 
 ## 4 — Pipeline DVC
 
@@ -76,12 +86,20 @@ Les fichiers JSON de scores sont déclarés comme métriques DVC. Les rapports s
 `cache: false` pour être conservés dans Git ; images, manifestes et checkpoint sont
 dans le cache DVC.
 
+Les commandes `dvc stage list` et `dvc dag` affichent les quatre étapes et les deux
+branches indépendantes après PREPARE.
+
 ## 5 — Provenance et MLflow
 
 **Checkpoint 4.** Git enregistre le code et la configuration sauvegardés ; la
 provenance note le commit et les modifications locales. DVC enregistre l'identité
 des données et la relation entre entrées, paramètres et sorties. MLflow enregistre
 chaque entraînement avec ses paramètres, métriques, Dataset, artefacts et modèle.
+
+Avant tout entraînement, la suite complète passe : **19 tests réussis** (tests du
+cours inchangés). Le setup affiche **SETUP PASS**, CUDA indisponible comme attendu
+pour ce protocole CPU. La signature du modèle est construite sur un exemple de
+validation normalisé, avec dimension batch, et les sorties sont les trois logits.
 
 ## 6 — Prédictions fixées avant entraînement
 
