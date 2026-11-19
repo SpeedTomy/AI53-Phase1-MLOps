@@ -1,0 +1,26 @@
+'data/raw.dvc' didn't change, skipping
+Stage 'validate' didn't change, skipping
+Stage 'prepare' didn't change, skipping
+Running stage 'evaluate':
+> uv run --locked python -m src.evaluate
+Loading selected model: runs:/116957febf994489ac92baa3458f3d34/bean-cnn
+Downloading artifacts:   0%|          | 0/1 [00:00<?, ?it/s]Downloading artifacts:   0%|          | 0/1 [00:00<?, ?it/s]
+Downloading artifacts:   0%|          | 0/17 [00:00<?, ?it/s]Downloading artifacts:   6%|▌         | 1/17 [00:00<00:00, 24966.10it/s]Downloading artifacts:  12%|█▏        | 2/17 [00:00<00:00, 20815.40it/s]Downloading artifacts:  18%|█▊        | 3/17 [00:00<00:00, 15401.36it/s]Downloading artifacts:  24%|██▎       | 4/17 [00:00<00:00, 16743.73it/s]Downloading artifacts:  29%|██▉       | 5/17 [00:00<00:00, 18188.66it/s]Downloading artifacts:  35%|███▌      | 6/17 [00:00<00:00, 13610.51it/s]Downloading artifacts:  41%|████      | 7/17 [00:00<00:00, 14343.00it/s]Downloading artifacts:  47%|████▋     | 8/17 [00:00<00:00, 12758.34it/s]Downloading artifacts:  53%|█████▎    | 9/17 [00:00<00:00, 13277.78it/s]Downloading artifacts:  59%|█████▉    | 10/17 [00:00<00:00, 14046.56it/s]Downloading artifacts:  65%|██████▍   | 11/17 [00:00<00:00, 12389.19it/s]Downloading artifacts:  71%|███████   | 12/17 [00:00<00:00, 1442.99it/s] Downloading artifacts:  76%|███████▋  | 13/17 [00:00<00:00, 688.49it/s] Downloading artifacts:  82%|████████▏ | 14/17 [00:00<00:00, 657.86it/s]Downloading artifacts:  88%|████████▊ | 15/17 [00:00<00:00, 672.95it/s]Downloading artifacts:  94%|█████████▍| 16/17 [00:00<00:00, 585.10it/s]Downloading artifacts: 100%|██████████| 17/17 [00:00<00:00, 580.68it/s]Downloading artifacts: 100%|██████████| 17/17 [00:00<00:00, 576.43it/s]
+Downloading artifacts:   0%|          | 0/1 [00:00<?, ?it/s]Downloading artifacts:   0%|          | 0/1 [00:00<?, ?it/s]
+Downloading artifacts:   0%|          | 0/1 [00:00<?, ?it/s]Downloading artifacts: 100%|██████████| 1/1 [00:00<00:00, 223.82it/s]Downloading artifacts: 100%|██████████| 1/1 [00:00<00:00, 219.34it/s]
+{
+  "selected_run_id": "116957febf994489ac92baa3458f3d34",
+  "test_accuracy": 0.6484375,
+  "test_macro_f1": 0.6444771241830066,
+  "training_data_identity": "8fa943ff6c17a3c874d2b152e9d7980602a5cd50c0d8156625bd00590a3d8c6c"
+}
+Updating lock file 'dvc.lock'
+
+To track the changes with git, run:
+
+	git add dvc.lock
+
+To enable auto staging, run:
+
+	dvc config core.autostage true
+Use `dvc push` to send your updates to remote storage.

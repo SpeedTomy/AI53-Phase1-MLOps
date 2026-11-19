@@ -1,0 +1,58 @@
+{
+  "pyproject.toml": {
+    "sha256": "8687a58fc86e697cc548ce95c121c1319a687e345259b4e442a163ca63d4eaf3",
+    "unchanged": true
+  },
+  "src/__init__.py": {
+    "sha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+    "unchanged": true
+  },
+  "src/data.py": {
+    "sha256": "3f6b93a8a581cccaadeeb2f066d1dacb9f4a6be2e7bdac4c482cd1a0e7338ff5",
+    "unchanged": true
+  },
+  "src/evaluate.py": {
+    "sha256": "f660c2f6551962137e5d9d33f742472e65be02b20a57cb2f0dda12af55844398",
+    "unchanged": true
+  },
+  "src/model.py": {
+    "sha256": "98567bad6739b22ea11ae6672a71c5ad0508f7b6660bc97e2f3bb16ae5f8a60b",
+    "unchanged": true
+  },
+  "src/prepare.py": {
+    "sha256": "bbe9bbb3e2ea802cc938f6114d248ebdc022bf92a6720191a34c3d0bb76b08e4",
+    "unchanged": true
+  },
+  "tests/test_data_validation.py": {
+    "sha256": "8a1a9f8b8a323fd01234afe242c4eddba3d33ec58b5b69139bef9db18a8807c1",
+    "unchanged": true
+  },
+  "tests/test_handoff.py": {
+    "sha256": "a6b373690a7aab311e1afde14f5bd6efbd8f6a602d9f67ce89795816018dd1be",
+    "unchanged": true
+  },
+  "tests/test_model.py": {
+    "sha256": "3e172ca7b65331139395422808236e44ef3f3d509a498d738562a38dcc95a16b",
+    "unchanged": true
+  },
+  "tests/test_prepared_identity.py": {
+    "sha256": "d766fe09e6de72307ab1c2dbff8b76bb01b6d6d1a5f8e36547915f1e8cced596",
+    "unchanged": true
+  },
+  "tests/test_provenance.py": {
+    "sha256": "4c2124207a9074e5df7fe102ed585e5ad91d2d4d5e6691559d08cbb5754c92cd",
+    "unchanged": true
+  },
+  "tests/test_reproducibility.py": {
+    "sha256": "9d3e5955838a56cd88c18261256d3ed9aac2320379cc0487a0e4bc4b767635dd",
+    "unchanged": true
+  },
+  "tests/test_validation_contract.py": {
+    "sha256": "4f519f5d2661c03587855bbe13e8d21039b727310dcc15e2074fe6ae874df7ad",
+    "unchanged": true
+  },
+  "uv.lock": {
+    "sha256": "1f544d7ea8b60445e3733cee920813df344d1e0e66c903c0a877dfcb346072dd",
+    "unchanged": true
+  }
+}

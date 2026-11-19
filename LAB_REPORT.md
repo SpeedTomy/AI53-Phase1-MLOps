@@ -30,7 +30,7 @@ ayant motivé la sélection. Il faut pouvoir relier ces éléments au même entr
 
 Le lab a son propre dépôt local dans `phase1_mlops/`. Les commits automatiques sont
 attribués à l'identité locale `AI53 Lab <ai53-lab@localhost>` ; aucune identité
-personnelle n'est inventée. La publication GitHub reste à vérifier séparément.
+personnelle n'est inventée. Le dépôt de remise est privé : [SpeedTomy/AI53-Phase1-MLOps](https://github.com/SpeedTomy/AI53-Phase1-MLOps).
 Les images, caches, environnements et données MLflow ne doivent pas entrer dans Git.
 
 ## 1 — Reproductibilité
@@ -179,13 +179,13 @@ et le modèle `bean-cnn` avec signature et exemple d'entrée attendus.
 Les courbes et manifestes individuels sont conservés dans `reports/runs/A`, `B`, `C`.
 
 **B face à A.** La macro-F1 passe de 0,625419 à 0,609117 et la loss finale de
-0,833060 à 0,892680. Cela est compatible avec une convergence plus lente sur quatre
+0,833060 à 0,892707. Cela est compatible avec une convergence plus lente sur quatre
 époques. Les deux losses diminuent régulièrement ; ces observations ne prouvent
 pas qu'un plus petit taux serait moins bon avec plus d'époques.
 
 **C face à A.** La macro-F1 finale descend à 0,613860. L'hypothèse d'un gain avec
 plus de dropout n'est pas confirmée dans ce protocole ; un apprentissage un peu
-plus lent reste plausible. C atteint 0,651058 à l'époque 3, puis baisse à l'époque 4.
+plus lent reste plausible. C atteint 0,651097 à l'époque 3, puis baisse à l'époque 4.
 A baisse aussi entre les époques 3 et 4. On compare bien les modèles de dernière
 époque enregistrés, sans sélectionner rétrospectivement une époque non livrée.
 Une fluctuation sur 133 images ne suffit pas à diagnostiquer à elle seule le
@@ -213,9 +213,49 @@ restent ceux de C, comme demandé ; le checkpoint `models/model.pt` est donc cel
 de C. Le test doit charger le modèle de A depuis MLflow, ce qui vérifie effectivement
 la séparation entre dernier entraînement et sélection finale.
 
-Résultats test à ajouter après cette décision committée.
+La décision a été sauvegardée au commit `2a415b2` avant l'évaluation. La commande
+`dvc repro evaluate` a réutilisé VALIDATE et PREPARE, puis exécuté uniquement
+EVALUATE. Le journal contient `Loading selected model:
+runs:/116957febf994489ac92baa3458f3d34/bean-cnn`.
+
+Sur les **128 images test** :
+
+| Mesure finale | Valeur |
+|---|---|
+| Accuracy | 0,6484375 (64,84 %) |
+| Macro-F1 | 0,6444771 (64,45 %) |
+| Run évalué | `116957febf994489ac92baa3458f3d34` |
+
+Le fichier `reports/test_metrics.json` identifie bien A et l'identité des données
+attendue. Le modèle a été rechargé depuis MLflow avec son code et ses métadonnées ;
+les vérifications de statut, expérience, image_size, classes et identité ont réussi.
+Le jeu test n'a été scoré qu'après la sélection, au cours d'une seule exécution
+EVALUATE. Ces résultats sont conservés tels quels, sans ajustement ultérieur. La matrice
+inspectée montre 23/43 bonnes prédictions pour angular_leaf_spot, 26/43 pour
+bean_rust et 34/42 pour healthy, soit 83/128 au total. La classe healthy est mieux
+reconnue ; les confusions restantes limitent la qualité du modèle.
 
 ## État de remise
 
-À compléter après vérifications finales. Le rendu du guide est l'URL du dépôt GitHub
-et ce rapport ; un dépôt local seul ne satisfait pas la partie publication.
+Le rendu comprend ce rapport et le dépôt Git, avec un commit par jalon et les
+preuves dans `reports/evidence/`. Les trois modèles et leurs enregistrements MLflow
+sont conservés pour Phase 2. Le remote DVC est local et doit être conservé avec le
+projet. Les tests du cours, le CNN, les modules fournis hors TODO, le pyproject et
+le verrou sont inchangés octet pour octet ; leurs SHA-256 sont enregistrés dans
+`reports/evidence/preserved-course-files.json`.
+
+Pour B et C aussi, `git.dirty=true` est exact : DVC retire les rapports de sortie
+suivis dans Git avant d'exécuter TRAIN. Les commits de configuration sont respectivement
+`ae98ef8` et `997604d`. Le drapeau n'est pas remplacé artificiellement par un état propre.
+
+Contrôles finaux : **19 tests réussis**, et `dvc status` indique
+`Data and pipelines are up to date`. Les données et checkpoints des commits ont
+été envoyés dans le remote DVC local avec `dvc push --all-commits`. Un remplacement
+local du chemin du remote par son chemin absolu a été nécessaire pour la traversée
+de l'historique ; le chemin relatif portable reste versionné dans `.dvc/config`.
+
+Dépôt GitHub privé de remise : <https://github.com/SpeedTomy/AI53-Phase1-MLOps>.
+Il contient les sources et preuves ; les images et données MLflow restent hors Git.
+Le compte de l'enseignant n'ayant pas été fourni, aucun accès nominatif ne lui a été
+accordé. La sauvegarde complète et sa restauration pour Phase 2 sont décrites dans
+`docs/RESTORE_PHASE2.md`.
