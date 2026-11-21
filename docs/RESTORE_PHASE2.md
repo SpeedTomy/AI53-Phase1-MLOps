@@ -52,6 +52,7 @@ Les données MLflow contiennent les trois modèles et leurs preuves de validatio
 l'évaluation finale déjà réalisée. Il n'est pas nécessaire de la relancer pour
 reprendre le modèle et préparer la Phase 2.
 
-Le dépôt GitHub est privé. L'accès de l'enseignant doit être accordé à son compte
-pour qu'il puisse consulter le rendu ; aucun compte destinataire n'a été fourni
-pendant cette session.
+Le dépôt de remise est consultable à l'adresse
+<https://github.com/SpeedTomy/AI53-Phase1-MLOps>.
+La sauvegarde complète contient en plus le stockage DVC et les données historiques
+MLflow, qui ne sont pas inclus dans le dépôt Git.

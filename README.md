@@ -1,100 +1,103 @@
-# AI53 — MLOps Phase 1 : Beans
+# AI53 - Pipeline MLOps de classification de feuilles de haricot
 
-Pipeline terminé : validation des 1 295 images, préparation déterministe, trois
-entraînements contrôlés, sélection sur validation et test final du modèle choisi.
+Projet de laboratoire, phase 1 - UTBM. **Mansour Thomas Yazan**.
 
-- [Rapport du lab : audit, checkpoints, prédictions et résultats](LAB_REPORT.md)
-- [Guide officiel](docs/AI53_Phase1_Lab_Guide.pdf)
-- [Comparaison des Runs et contrôle du logging](reports/experiment_comparison.json)
-- [Scores du test final](reports/test_metrics.json)
-- [Matrice de confusion](reports/test_confusion_matrix.png)
+Le projet construit une chaîne reproductible autour du CNN fourni : validation des données Beans, préparation, trois entraînements contrôlés, sélection sur validation et test final du modèle retenu.
 
-Le CNN et les tests sont ceux du cours. Les anciens TP AI53 sont dans le dossier
-parent ; ce projet possède son environnement et son dépôt Git indépendants.
+## Consulter le rendu
+
+- **[Rapport PDF](output/pdf/AI53_Phase1_Rapport.pdf)** - version mise en page pour la lecture et la correction.
+- **[Rapport Markdown](LAB_REPORT.md)** - réponses aux jalons 0 à 8 et aux six checkpoints.
+- [Comparaison des expériences](reports/experiment_comparison.json), [scores test](reports/test_metrics.json) et [matrice de confusion](reports/test_confusion_matrix.png).
+- [Guide du laboratoire](docs/AI53_Phase1_Lab_Guide.pdf) et [attribution / licence des données](DATASET_SOURCE.md).
 
 ## Résultats
 
-| Run | Seul changement par rapport à A | Macro-F1 validation, époque 4 |
-|---|---|---|
-| A | Baseline : LR 0,001, dropout 0,30 | 0,625419 |
-| B | LR 0,0003 | 0,609117 |
-| C | Dropout 0,50 | 0,613860 |
+| Run | Modification par rapport à A | Accuracy validation | Macro-F1 validation |
+|---|---|---:|---:|
+| **A** | Référence : LR 0,001 ; dropout 0,30 | **0,639098** | **0,625419** |
+| B | Learning rate 0,0003 | 0,616541 | 0,609117 |
+| C | Dropout 0,50 | 0,624060 | 0,613860 |
 
-Run sélectionné : **A**, `116957febf994489ac92baa3458f3d34`.
-Test final : **accuracy 0,648438 ; macro-F1 0,644477**, sur 128 images.
-Une seule graine et un petit jeu de validation limitent la portée de la comparaison.
+Les données, la graine 42, les quatre époques, le batch de 32 et l'absence d'augmentation sont communs. Les scores correspondent à la dernière époque. **A a été sélectionné avant l'évaluation test** : accuracy **64,84 %**, macro-F1 **64,45 %** sur 128 images. Une seule graine et un petit jeu de validation limitent la généralisation de cette comparaison.
 
-## Installation et vérification
+## Pipeline et outils
 
-Depuis ce dossier, avec Git, uv et Python 3.12 :
+```mermaid
+flowchart LR
+    Raw[Images brutes] --> V[VALIDATE]
+    V --> P[PREPARE]
+    Raw --> P
+    P --> T[TRAIN : train / validation]
+    T --> M[Candidats MLflow]
+    P --> E[EVALUATE : test]
+    M --> S[Sélection sur validation]
+    S --> E
+```
+
+Git conserve le code, la configuration et les preuves ; uv verrouille l'environnement ; DVC suit les données et les dépendances ; MLflow conserve les Runs et modèles ; pytest vérifie les contrats du code. Les commandes des quatre étapes sont dans [dvc.yaml](dvc.yaml).
+
+## Installation et contrôles
+
+Pré-requis : Git, uv et Python 3.12. Depuis la racine du dépôt :
 
 ```bash
 uv sync --locked --python 3.12
 uv run --locked python scripts/check_environment.py
 uv run --locked pytest -q
-uv run --locked dvc status
 ```
 
-Sur cette machine, uv a été installé localement dans le dossier AI53. Si `uv` n'est
-pas sur le PATH, exécuter d'abord, depuis `phase1_mlops/` :
+La suite du cours compte **19 tests réussis**. Le modèle, les tests et le verrou fournis sont préservés ; les contrôles et empreintes se trouvent dans [reports/evidence/](reports/evidence/).
 
-```bash
-export PATH="$PWD/../.tools/uv-env/bin:$PATH"
-export UV_CACHE_DIR="$PWD/../.tools/uv-cache"
-```
+Les images et les données MLflow ne sont pas incluses dans Git. Un clone permet de consulter le rendu et de lancer les tests unitaires, mais ne contient pas le stockage DVC local ni les trois modèles historiques. La sauvegarde Phase 2 les conserve ; voir [la procédure de restauration](docs/RESTORE_PHASE2.md).
 
-Si le cache système DVC n'est pas accessible, lui donner un dossier local :
+Si le cache système DVC n'est pas accessible :
 
 ```bash
 mkdir -p .dvc/site-cache
 uv run --locked dvc config --local core.site_cache_dir "$PWD/.dvc/site-cache"
 ```
 
-Ce cache est ignoré par Git. Les données volumineuses sont dans le remote DVC
-local voisin `../ai53-phase1-dvc-storage`. Sur cette machine ou après restauration
-de la sauvegarde complète, les récupérer avec `uv run --locked dvc pull`.
-Un clone GitHub seul ne contient ni ce remote, ni les données MLflow ; il contient
-le code, les pointeurs, les rapports et l'historique. Pour de nouveaux entraînements
-sans sauvegarde, `scripts/download_dataset.py` peut télécharger les archives vérifiées.
+## Reconstituer les données pour un nouvel entraînement
 
-## Consulter MLflow et reprendre en Phase 2
+Les scripts téléchargent les trois archives publiques, vérifient leurs SHA-256 et extraient les 1 034 images train, 133 validation et 128 test :
 
-Le serveur est arrêté après le lab pour sauvegarder ses fichiers proprement.
-Pour le rouvrir, garder ce dossier comme répertoire de travail :
+```bash
+uv run --locked python scripts/download_dataset.py
+uv run --locked python scripts/check_dataset.py
+```
+
+Avec les archives fournies par le cours, utiliser `python scripts/download_dataset.py --archive-dir dataset-archives` via `uv run --locked`. Avec la sauvegarde complète restaurée, `uv run --locked dvc pull` récupère les images et checkpoints depuis le remote voisin.
+
+Pour lancer MLflow, dans un premier terminal :
 
 ```bash
 uv run --locked mlflow server --host 127.0.0.1 --port 5000 --workers 1 --backend-store-uri sqlite:///mlflow.db
 ```
 
-Ouvrir <http://127.0.0.1:5000>. Les trois Runs sont dans
-`bean-image-classification`. Dans un second terminal :
+Ouvrir <http://127.0.0.1:5000>. Dans un second terminal, `uv run --locked dvc repro train` exécute la branche d'entraînement si ses entrées ont changé. Les réglages actuels de TRAIN correspondent à C ; les paramètres historiques de A et B restent dans Git et dans les manifestes des Runs.
 
-```bash
-uv run --locked python scripts/inspect_runs.py
-```
+Le test final enregistré porte sur A. Les données historiques MLflow sont nécessaires pour recharger son Run ID ; un nouveau serveur vide ne les reconstitue pas. Les résultats de test déjà fournis servent à la remise et n'ont pas guidé le réglage des candidats.
 
-Le modèle retenu est `runs:/116957febf994489ac92baa3458f3d34/bean-cnn`.
-Son entrée est un tenseur float32 NCHW `(-1, 3, 96, 96)` : RGB, resize bilinéaire
-96×96, conversion en tenseur, normalisation moyenne/écart-type `(0.5, 0.5, 0.5)`.
-Il renvoie trois logits dans l'ordre `angular_leaf_spot`, `bean_rust`, `healthy`.
-Le checkpoint local `models/model.pt` est celui de C ; le Run sélectionné fait autorité.
+## Modèle sélectionné et Phase 2
 
-Conserver ensemble `mlflow.db`, `mlartifacts/`, ce dépôt et le remote DVC.
-Arrêter le serveur avec Ctrl+C avant de copier la base et les artefacts.
-Les résultats test sont déjà enregistrés : ils n'ont pas servi à choisir les paramètres.
+- Run retenu : `116957febf994489ac92baa3458f3d34`.
+- Modèle : `runs:/116957febf994489ac92baa3458f3d34/bean-cnn`.
+- Entrée : float32 NCHW `(-1, 3, 96, 96)`, RGB, resize bilinéaire, normalisation moyenne / écart-type `(0.5, 0.5, 0.5)`.
+- Sortie : trois logits, dans l'ordre `angular_leaf_spot`, `bean_rust`, `healthy`.
 
-## Pipeline
+Le checkpoint local `models/model.pt` correspond à C ; la sélection finale recharge A depuis MLflow. Conserver le dépôt, le remote DVC, `mlflow.db` et `mlartifacts/`. Arrêter le serveur avant toute sauvegarde de sa base.
 
-```text
-data/raw ──> validate ──> prepare ──> train ──> modèles candidats MLflow
-    └──────────────────────┘  └───> evaluate <── selection.run_id + modèle MLflow
-```
+## Repères dans le dépôt
 
-`uv run --locked dvc repro train` construit un candidat sur train/validation.
-`uv run --locked dvc repro evaluate` traite la branche du modèle sélectionné.
-Les dépendances et paramètres détaillés sont dans [dvc.yaml](dvc.yaml).
+| Emplacement | Contenu |
+|---|---|
+| `src/` | Étapes du pipeline, CNN et fonctions de reproductibilité / provenance |
+| `tests/` | Tests du cours |
+| `params.yaml`, `dvc.yaml`, `dvc.lock` | Configuration, dépendances et états du pipeline |
+| `reports/runs/` | Courbes, résumés et manifestes de A, B et C |
+| `reports/evidence/` | Extraits d'exécution et vérifications |
+| `docs/` | Guide, références et restauration |
+| `output/pdf/` | Rapport final mis en page |
 
-La distribution originale reste dans `~/Downloads/AI53_Phase1_Lab`.
-`docs/distribution/MANIFEST.sha256` s'applique à cette distribution d'origine,
-et non à l'arborescence modifiée du projet. Attribution et licence des images :
-[DATASET_SOURCE.md](DATASET_SOURCE.md).
+La distribution originale du cours est conservée séparément. `docs/distribution/MANIFEST.sha256` décrit les fichiers de cette distribution, et non l'arborescence modifiée du projet.

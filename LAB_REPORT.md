@@ -1,261 +1,243 @@
-# AI53 — Lab MLOps Phase 1
+# AI53 - Projet MLOps, phase 1
 
-Travail réalisé le 19 novembre 2026 à partir du starter officiel fourni.
-Les mesures sont ajoutées après exécution ; les prédictions sont fixées avant entraînement.
+## Pipeline reproductible de classification de feuilles de haricot
 
-## 0 — Audit du starter
+**Étudiant :** Mansour Thomas Yazan<br/>
+**Expériences :** 19 novembre 2026 - **Rapport mis en forme :** 21 novembre 2026<br/>
+**Dépôt de remise :** <https://github.com/SpeedTomy/AI53-Phase1-MLOps>
 
-Les fichiers de la distribution et les trois archives ont tous passé la vérification
-`shasum -a 256 -c MANIFEST.sha256` avant leur copie. Le starter original est conservé
-dans le dossier de téléchargement. Le CNN, les scripts de préparation/évaluation
-et les tests du cours sont conservés.
+### Synthèse
 
-| Fichier / réglage | Problème constaté avant modification | Correction et vérification |
+Le projet transforme le CNN fourni en une chaîne d'entraînement traçable : contrôle des données, préparation, entraînement des candidats, sélection sur validation et évaluation finale. Les jalons 0 à 8 du guide ont été réalisés en conservant le réseau, les tests du cours et le verrou de dépendances.
+
+Trois expériences contrôlées ont été comparées sur la macro-F1 de validation à la dernière époque. Le modèle A a été sélectionné avant de consulter le test. Il obtient ensuite **64,84 % d'accuracy et 64,45 % de macro-F1 sur 128 images test**. Les **19 tests du cours passent**. Ces résultats établissent le fonctionnement du pipeline ; une seule graine et un petit jeu de validation limitent la portée de la comparaison des réglages.
+
+### Données et protocole
+
+Le jeu public iBean / Beans, attribué au Makerere AI Lab et à NaCRRI, contient trois classes : `angular_leaf_spot`, `bean_rust` et `healthy`. Les archives exactes du cours contiennent 1 295 images, contre 1 296 annoncées pour la collection d'origine. Les archives utilisées sont vérifiées par SHA-256 ; l'attribution et la licence MIT sont conservées dans [DATASET_SOURCE.md](DATASET_SOURCE.md).
+
+| Ensemble | Images | Rôle dans l'expérience |
+|---|---:|---|
+| Entraînement | 1 034 | Apprentissage des poids du CNN |
+| Validation | 133 | Comparaison des candidats et sélection |
+| Test | 128 | Mesure finale après gel du modèle choisi |
+
+Les images sont converties en RGB et redimensionnées à 96 × 96 pixels. La normalisation est appliquée au chargement des tenseurs. Chaque candidat est entraîné sur CPU pendant quatre époques, avec une graine fixée à 42. Le réseau conserve ses trois blocs convolutifs fournis par le cours.
+
+### Organisation de la chaîne
+
+```text
+Images brutes -> VALIDATE -> PREPARE -> TRAIN -> candidats MLflow
+                                |
+                                +-> test préparé -> EVALUATE
+                                                      ^
+                                sélection sur validation + modèle MLflow
+```
+
+Git conserve le code et la configuration ; uv reconstruit l'environnement ; DVC suit les données et les dépendances ; MLflow enregistre les expériences ; pytest vérifie les contrats du code. TRAIN et EVALUATE constituent deux branches distinctes après PREPARE.
+
+<!-- pagebreak -->
+
+## 1. Audit initial et reproductibilité
+
+### Jalon 0 - Constats sur le starter
+
+Les fichiers de la distribution ont été vérifiés avec `MANIFEST.sha256` avant modification. Les tests initiaux donnaient **11 échecs et 8 réussites**. L'audit a identifié les éléments suivants.
+
+| Élément | Problème observé | Correction ou contrôle |
 |---|---|---|
-| `src/reproducibility.py` | Seul `random` est initialisé ; NumPy, Torch, le générateur et les workers restent incomplets. | Initialiser toutes les sources ; tests de reproductibilité. |
-| `src/validate_data.py` | `validate_dataset` lève `NotImplementedError` : aucune barrière qualité effective. | Vérifier structure, classes, effectifs et décodage complet ; tests et exécution sur les 1 295 images. |
-| `src/provenance.py` | `build_run_manifest` n'est pas implémenté. | Capturer Git, identité des données, versions, configuration et Run ID ; test et inspection des vrais Runs. |
-| `src/train.py` | Les blocs de journalisation MLflow ne sont pas implémentés. | Enregistrer paramètres, Dataset, séries de métriques, artefacts et modèle avec contrat d'entrée/sortie. |
-| `dvc.yaml` absent | Pas de dépendances ni d'invalidation automatique des étapes. | Construire quatre étapes et vérifier le DAG puis les recalculs observés. |
-| `data/raw.dvc`, `.dvc/` absents | Les archives existent mais les images ne sont pas encore versionnées et sauvegardées par DVC. | Vérifier SHA-256, extraire, `dvc add`, configurer le remote local et `dvc push`. |
-| Environnement du dossier AI53 | Le Python courant est 3.14 alors que le starter exige 3.11/3.12. | Utiliser Python 3.12 et une `.venv` propre au lab avec `uv sync --locked`. Ne pas modifier l'environnement des anciens TP. |
-| Historique / sélection | Aucun historique Git ni Run de référence ; `selection.run_id` est vide. | Commits par jalon, comparaison sur validation puis gel du Run ID avant un seul test final. |
-| Conservation MLflow | `.gitignore` exclut correctement la base et les artefacts, mais Git seul ne les sauvegarde pas. | Conserver la base et les artefacts, arrêter le serveur avant une sauvegarde cohérente pour Phase 2. |
+| `reproducibility.py` | NumPy, Torch, générateur et workers incomplets | Initialiser les sources aléatoires ; tests dédiés |
+| `validate_data.py` | Validateur non implémenté | Contrôler structure, effectifs et décodage complet |
+| `provenance.py` | Manifeste de Run absent | Capturer Git, données, versions et configuration |
+| `train.py` | Journalisation MLflow incomplète | Paramètres, Dataset, métriques, artefacts et modèle |
+| `dvc.yaml` | Pipeline non défini | Quatre étapes avec dépendances et paramètres précis |
+| Données brutes | Images non suivies par DVC | Vérifier les archives, extraire, versionner et sauvegarder |
+| Environnement | Python courant 3.14 incompatible avec le starter | Environnement Python 3.12 isolé et verrou inchangé |
+| Sélection et conservation | Aucun candidat choisi ni sauvegarde MLflow | Comparaison sur validation, gel du Run ID et sauvegarde Phase 2 |
 
-**Checkpoint 1.** Un `model.pt` utilisable ne suffit pas : il ne reconstitue ni le
-code exact, ni les données, les versions, les graines et les réglages, ni les scores
-ayant motivé la sélection. Il faut pouvoir relier ces éléments au même entraînement.
+**Checkpoint 1 - Pourquoi un fichier `model.pt` ne suffit-il pas ?** Un modèle seul ne reconstitue ni le code utilisé, ni les données, les versions, les graines et les réglages, ni les mesures ayant motivé sa sélection. Ces informations doivent être reliées au même entraînement.
 
-## Mise en place et périmètre
+### Jalon 1 - Environnement et graines
 
-Le lab a son propre dépôt local dans `phase1_mlops/`. Les commits automatiques sont
-attribués à l'identité locale `AI53 Lab <ai53-lab@localhost>` ; aucune identité
-personnelle n'est inventée. Le dépôt de remise est privé : [SpeedTomy/AI53-Phase1-MLOps](https://github.com/SpeedTomy/AI53-Phase1-MLOps).
-Les images, caches, environnements et données MLflow ne doivent pas entrer dans Git.
+`pyproject.toml` décrit les exigences du projet. `uv.lock` fige les versions résolues et leurs sources. `.venv/` est l'installation locale, recréable à partir de ces deux fichiers. Le verrou fourni a été conservé, et le contrôle d'environnement affiche **SETUP PASS** sur Python 3.12.14.
 
-## 1 — Reproductibilité
+La fonction `set_reproducibility` initialise Python `random`, NumPy, Torch CPU et les dispositifs CUDA lorsqu'ils sont disponibles. Le générateur du DataLoader fixe l'ordre de mélange ; chaque worker initialise Python et NumPy à partir de la graine donnée par Torch. Les options cuDNN déterministes sont activées et son benchmark est désactivé.
 
-`pyproject.toml` décrit les exigences et les plages de versions ; `uv.lock` fige les
-versions résolues et les sources ; `.venv/` contient leur installation locale et se
-recrée à partir du verrou. Le verrou fourni est conservé.
+**Checkpoint 2 - La graine 42 garantit-elle une identité universelle ?** Elle contrôle les tirages dans un environnement donné. Elle ne garantit pas des résultats bit à bit identiques entre architectures CPU/GPU, versions logicielles ou algorithmes numériques différents.
 
-Les tests du starter, avant correction, donnent **11 échecs et 8 réussites**.
-Un défaut supplémentaire du script de setup est apparu sur macOS : résoudre le
-lien symbolique de `.venv/bin/python` pointe vers le Python de base et produit un
-faux échec. Le contrôle utilise désormais `sys.prefix` pour identifier l'environnement
-actif. Cela ne change ni le verrou ni les tests du cours.
+Une adaptation du script de contrôle a été nécessaire sur macOS : suivre le lien symbolique de `.venv/bin/python` désignait le Python de base et produisait un faux échec. Le contrôle utilise désormais `sys.prefix` pour identifier l'environnement actif. Les tests du cours sont inchangés.
 
-**Checkpoint 2.** `random_state=42` contrôle les tirages dans un environnement donné.
-Il ne garantit pas une identité bit à bit entre architectures CPU/GPU, versions de
-bibliothèques ou algorithmes numériques différents. Les réglages cuDNN limitent
-le non-déterminisme sans constituer une garantie universelle.
+<!-- pagebreak -->
 
-## 2 — Versionnement des données
+## 2. Versionnement, qualité et pipeline des données
 
-**Checkpoint 3.** Le remote Git stocke le code, la configuration, l'historique et les
-pointeurs DVC. Le remote DVC stocke les octets des données et sorties mises en cache.
-`git push` ne transfère pas les images gérées par DVC ; il faut aussi `dvc push`.
+### Jalons 2 et 3 - Acquisition et barrière qualité
 
-## 3 — Barrière qualité
+Les trois archives ont passé leur vérification SHA-256 avant extraction. Le validateur contrôle la présence des ensembles, les trois classes exactes, les effectifs attendus, l'absence de classe vide et le décodage de tous les pixels avec Pillow. Une image illisible ou une structure incorrecte provoque une erreur et bloque la suite de la chaîne.
 
-Le validateur décode les pixels de toutes les images. Résultat : **PASS**, 1 295
-images, soit 1 034 train, 133 validation et 128 test. Les classes sont exactement
-`angular_leaf_spot`, `bean_rust`, `healthy`, toutes non vides. Le rapport est trié
-et sans horodatage. Les tests couvrent fichier corrompu, split absent, classe
-supplémentaire, classe vide, mauvais effectif et stabilité du rapport.
+| Classe | Train | Validation | Test |
+|---|---:|---:|---:|
+| `angular_leaf_spot` | 345 | 44 | 43 |
+| `bean_rust` | 348 | 45 | 43 |
+| `healthy` | 341 | 44 | 42 |
+| **Total** | **1 034** | **133** | **128** |
 
-Le cache système DVC par défaut pointait vers `/opt/homebrew/var/cache/dvc`, hors
-zone d'écriture de cette session. Un cache local dans `.tools/` est configuré dans
-`.dvc/config.local` (hors Git). Le remote `lab-data` est le dossier voisin
-`../ai53-phase1-dvc-storage` : **1 297 objets transférés** lors de la première sauvegarde
-(les 1 295 images et leurs métadonnées de cache). Ce remote reste local à la machine.
+Le rapport `reports/data_quality.json` donne **PASS, 1 295 images**. Il ne contient pas d'horodatage : sur des données identiques, son contenu reste identique. Les tests couvrent notamment fichier corrompu, ensemble absent, classe supplémentaire, classe vide, effectif erroné et stabilité du rapport.
 
-## 4 — Pipeline DVC
+Les données brutes sont suivies par `data/raw.dvc`. Le remote DVC `lab-data` est un dossier local voisin du projet. Les données et checkpoints de l'historique y ont été sauvegardés avec `dvc push --all-commits`.
 
-`prepare` dépend du rapport qualité **et** des images brutes : le rapport autorise
-la suite, mais ses seuls effectifs ne représentent pas le contenu des images.
-Les dépendances des étapes incluent leurs imports locaux et les deux fichiers
-d'environnement. Les paramètres sont déclarés individuellement.
+**Checkpoint 3 - Que transportent les remotes ?** Le remote Git reçoit le code, les réglages, les rapports et les pointeurs DVC. Le remote DVC reçoit les octets des données et sorties mises en cache. Un `git push` ne transfère pas les images : un `dvc push` est également nécessaire.
 
-`train` dépend uniquement des images et manifestes train/validation. `evaluate`
-dépend du test préparé et des manifestes train/validation nécessaires à la vérification
-d'identité, ainsi que de `selection.run_id`. Il ne dépend ni du checkpoint local ni
-des rapports TRAIN : le modèle sélectionné provient de MLflow.
+### Jalon 4 - Quatre étapes déclarées dans `dvc.yaml`
 
-Les fichiers JSON de scores sont déclarés comme métriques DVC. Les rapports sont
-`cache: false` pour être conservés dans Git ; images, manifestes et checkpoint sont
-dans le cache DVC.
+| Étape | Entrées principales | Sorties principales |
+|---|---|---|
+| VALIDATE | Images brutes et code de validation | Rapport qualité déterministe |
+| PREPARE | Images brutes, rapport qualité, taille cible | Images RGB redimensionnées, manifestes et résumé |
+| TRAIN | Train/validation préparés et réglages d'entraînement | Checkpoint, courbes, scores, provenance et candidat MLflow |
+| EVALUATE | Test préparé, Run sélectionné et identité des données | Scores test et matrice de confusion |
 
-Les commandes `dvc stage list` et `dvc dag` affichent les quatre étapes et les deux
-branches indépendantes après PREPARE.
+PREPARE dépend du rapport qualité **et des images brutes** : des effectifs inchangés ne garantissent pas des images inchangées. Les manifestes enregistrent les chemins, étiquettes et SHA-256 des fichiers sources et préparés. L'identité des données d'entraînement combine les manifestes train et validation.
 
-## 5 — Provenance et MLflow
+Chaque étape déclare ses imports locaux, `pyproject.toml`, `uv.lock` et les paramètres qu'elle utilise. Les images, manifestes et checkpoints sont dans le cache DVC ; les petits rapports sont conservés dans Git avec `cache: false`. Les JSON de scores sont déclarés comme métriques. Le DAG vérifié sépare TRAIN et EVALUATE : le test final charge le modèle sélectionné dans MLflow.
 
-**Checkpoint 4.** Git enregistre le code et la configuration sauvegardés ; la
-provenance note le commit et les modifications locales. DVC enregistre l'identité
-des données et la relation entre entrées, paramètres et sorties. MLflow enregistre
-chaque entraînement avec ses paramètres, métriques, Dataset, artefacts et modèle.
+<!-- pagebreak -->
 
-Avant tout entraînement, la suite complète passe : **19 tests réussis** (tests du
-cours inchangés). Le setup affiche **SETUP PASS**, CUDA indisponible comme attendu
-pour ce protocole CPU. La signature du modèle est construite sur un exemple de
-validation normalisé, avec dimension batch, et les sorties sont les trois logits.
+## 3. Provenance MLflow et comportement des recalculs
 
-## 6 — Prédictions fixées avant entraînement
+### Jalon 5 - Enregistrement de chaque expérience
 
-Hypothèse du guide : toutes les sorties sont à jour, test compris ; Run sélectionné fixe.
+Chaque exécution TRAIN crée un Run dans `bean-image-classification`. Le manifeste de provenance est capturé au début du Run, avant l'écriture des sorties d'entraînement. Il enregistre commit Git, état local, identité des données, versions logicielles, dispositif, graine, configuration et Run ID.
+
+MLflow conserve les onze paramètres requis, le Dataset `bean-training` de contexte `training` et de cible `label`, puis les quatre métriques par époque : `train_loss`, `val_loss`, `val_accuracy`, `val_macro_f1`. Le temps total d'entraînement et les trois artefacts demandés sont également enregistrés : courbes, résumé et manifeste.
+
+Le modèle final `bean-cnn` est sauvegardé sur CPU, en mode évaluation, avec le code de sa classe, une signature, un exemple d'entrée et les métadonnées `class_names` et `image_size`. L'exemple provient de la validation. `scripts/inspect_runs.py` a vérifié ces enregistrements sur les trois Runs terminés, ainsi que la correspondance entre les scores finaux et l'époque 4.
+
+**Checkpoint 4 - Rôle des trois outils.** Git identifie le code et les réglages sauvegardés. DVC relie les états des données, paramètres et sorties. MLflow conserve les preuves propres à chaque entraînement et son modèle.
+
+### Jalon 6 - Prédictions fixées avant entraînement
+
+Hypothèse du guide : toutes les sorties, test compris, sont à jour ; le Run sélectionné reste fixe. « Réutilisé » signifie que DVC conserve les sorties de l'étape.
 
 | Changement isolé | VALIDATE | PREPARE | TRAIN | EVALUATE |
 |---|---|---|---|---|
-| `train.learning_rate` | REUSED | REUSED | RERUN | REUSED |
-| `data.image_size` | REUSED | RERUN | RERUN | NEEDS UPDATE |
-| Commentaire dans `src/validate_data.py`, rapport inchangé | RERUN | REUSED | REUSED | REUSED |
-| `README.md` uniquement | REUSED | REUSED | REUSED | REUSED |
+| Taux d'apprentissage | Réutilisé | Réutilisé | Relancé | Réutilisé |
+| Taille des images | Réutilisé | Relancé | Relancé | À revalider |
+| Commentaire du validateur, rapport inchangé | Relancé | Réutilisé | Réutilisé | Réutilisé |
+| README uniquement | Réutilisé | Réutilisé | Réutilisé | Réutilisé |
 
-**Checkpoint 5.** Le taux d'apprentissage est une entrée de TRAIN uniquement : ni
-le contrôle des images, ni leur préparation, ni le Run déjà sélectionné n'en dépendent.
-Un commentaire dans le validateur change son empreinte et relance VALIDATE ; si
-le JSON qualité reste identique, les entrées de PREPARE restent identiques, puis celles
-des deux branches aussi. Une nouvelle taille change PREPARE et les tenseurs/manifeste
-des deux branches ; l'ancien Run doit être revalidé et peut être rejeté.
-
-**Règle de sélection fixée à l'avance :** maximiser la macro-F1 de validation à la
-dernière époque ; en cas d'égalité, maximiser l'accuracy de validation ; puis minimiser
-la loss de validation ; puis préférer A, B, C dans cet ordre. Le temps est descriptif,
-car il dépend de la charge de la machine.
-
-**Prédiction B :** passer de 0,001 à 0,0003 réduit les pas d'Adam. Sur quatre époques,
-la convergence peut être plus lente et le score final plus faible ; des courbes plus
-stables restent possibles. Ce n'est pas une garantie.
-
-**Protocole C :** revenir au taux de A et passer seulement le dropout de 0,30 à 0,50.
-Une régularisation plus forte peut limiter le surapprentissage, mais peut aussi
-ralentir l'apprentissage de ce petit réseau sur quatre époques. Graine, données,
-batch, augmentation et nombre d'époques sont identiques à A.
-
-### Observations DVC
+**Checkpoint 5 - Justification.** Le taux d'apprentissage est une entrée de TRAIN uniquement. Un commentaire modifie l'empreinte du validateur ; si son JSON reste identique, les entrées de PREPARE puis de TRAIN restent identiques. Changer la taille modifie les données préparées : l'ancien Run sélectionné peut être rejeté pour incompatibilité.
 
 | Vérification réellement exécutée | VALIDATE | PREPARE | TRAIN | EVALUATE |
 |---|---|---|---|---|
-| Première baseline A | RERUN | RERUN | RERUN | NOT RUN |
-| Même commande sans changement | REUSED | REUSED | REUSED | NOT RUN |
-| Commentaire seul dans le validateur | RERUN | REUSED | REUSED | NOT RUN |
-| Taux à 0,0003 pour B | REUSED | REUSED | RERUN | NOT RUN |
+| Première baseline A | Relancé | Relancé | Relancé | Non exécuté |
+| Sans changement | Réutilisé | Réutilisé | Réutilisé | Non exécuté |
+| Commentaire dans le validateur | Relancé | Réutilisé | Réutilisé | Non exécuté |
+| Taux à 0,0003 pour B | Réutilisé | Réutilisé | Relancé | Non exécuté |
 
-Les extraits complets sont dans `reports/evidence/`. Sans changement, DVC affiche
-`Stage 'validate' didn't change, skipping`, puis la même chose pour `prepare` et
-`train`. Après le commentaire, il affiche `Running stage 'validate'`, puis ignore
-`prepare` et `train`. Les SHA-256 du rapport qualité avant/après sont identiques.
-Cela confirme l'invalidation par contenu ; aucun nouveau Run MLflow n'est créé
-par ces deux contrôles. `dvc repro train` ne parcourt pas la branche EVALUATE.
+Les résultats confirment les prédictions. Après le commentaire, le SHA-256 du rapport qualité est inchangé ; DVC affiche ensuite `Stage 'prepare' didn't change, skipping` et le même message pour TRAIN. Aucun Run supplémentaire n'est créé par ces deux contrôles. Les extraits sont conservés dans `reports/evidence/`.
 
-Run A : `116957febf994489ac92baa3458f3d34`, quatre époques terminées, accuracy
-validation 0,639098, macro-F1 0,625419 et 13,068 secondes d'entraînement mesuré.
-La provenance indique `dirty=true` : lors du premier passage DVC, les nouvelles
-sorties de PREPARE et `dvc.lock` ne sont pas encore commitées. Le code utilisé était
-bien sauvegardé au commit `c9ee6e6`. Le drapeau est conservé tel qu'observé.
+<!-- pagebreak -->
 
-Pour B, seuls les paramètres de TRAIN changent : DVC ignore VALIDATE et PREPARE,
-puis exécute TRAIN. C'est conforme à la prédiction. Run B :
-`37c50006d9d548aba01e852501fa6aa6`. `scripts/inspect_runs.py` a vérifié dans MLflow
-pour A et B les onze paramètres, le Dataset de contexte training, les quatre séries
-avec steps 1–4, les trois artefacts, la signature, l'exemple d'entrée et les métadonnées.
-Les valeurs finales correspondent bien à la quatrième époque.
+## 4. Comparaison de trois expériences contrôlées
 
-## 7 — Comparaison contrôlée
+### Jalon 7 - Protocole et hypothèses
 
-| Run | Changement par rapport à A | Val. accuracy | Val. macro-F1 | Val. loss | Temps (s) | Run ID |
-|---|---|---|---|---|---|---|
-| A | Baseline | 0.639098 | 0.625419 | 0.833060 | 13.068 | `116957febf994489ac92baa3458f3d34` |
-| B | Learning rate 0,0003 | 0.616541 | 0.609117 | 0.892707 | 13.358 | `37c50006d9d548aba01e852501fa6aa6` |
-| C | Dropout 0,50 | 0.624060 | 0.613860 | 0.839332 | 13.290 | `ed08edffe9c248df894db2ec166df2d0` |
+Les trois essais utilisent les mêmes données, la graine 42, quatre époques, des images 96 × 96, un batch de 32 et aucune augmentation. A est la référence : learning rate 0,001 et dropout 0,30. Les paramètres de B et C ont été sauvegardés dans Git avant leur entraînement.
 
-Les trois Runs sont FINISHED. Leur identité train/validation est identique :
-`8fa943ff6c17a3c874d2b152e9d7980602a5cd50c0d8156625bd00590a3d8c6c`.
-Les différences de paramètres MLflow ont été vérifiées : B ne diffère de A que par
-`learning_rate` ; C ne diffère de A que par `dropout`. Les trois ont les onze
-paramètres, les quatre points par série de métriques, le Dataset, les trois artefacts
-et le modèle `bean-cnn` avec signature et exemple d'entrée attendus.
-Les courbes et manifestes individuels sont conservés dans `reports/runs/A`, `B`, `C`.
+**Hypothèse B, formulée avant l'essai :** abaisser le learning rate à 0,0003 peut ralentir la convergence sur quatre époques, avec un score final plus faible. **Hypothèse C :** augmenter uniquement le dropout à 0,50 peut limiter le surapprentissage, mais aussi ralentir l'apprentissage de ce petit réseau. C reprend le learning rate de A.
 
-**B face à A.** La macro-F1 passe de 0,625419 à 0,609117 et la loss finale de
-0,833060 à 0,892707. Cela est compatible avec une convergence plus lente sur quatre
-époques. Les deux losses diminuent régulièrement ; ces observations ne prouvent
-pas qu'un plus petit taux serait moins bon avec plus d'époques.
+La règle de sélection fixée avant l'entraînement maximise la macro-F1 de validation à la **dernière époque**, puis l'accuracy, puis minimise la loss ; une égalité complète favoriserait A, B, C dans cet ordre. Le temps reste descriptif, car il dépend de la charge de la machine.
 
-**C face à A.** La macro-F1 finale descend à 0,613860. L'hypothèse d'un gain avec
-plus de dropout n'est pas confirmée dans ce protocole ; un apprentissage un peu
-plus lent reste plausible. C atteint 0,651097 à l'époque 3, puis baisse à l'époque 4.
-A baisse aussi entre les époques 3 et 4. On compare bien les modèles de dernière
-époque enregistrés, sans sélectionner rétrospectivement une époque non livrée.
-Une fluctuation sur 133 images ne suffit pas à diagnostiquer à elle seule le
-surapprentissage. A reste le meilleur selon la règle fixée avant entraînement.
+| Run | Changement face à A | Accuracy val. | Macro-F1 val. | Loss val. | Temps (s) |
+|---|---|---:|---:|---:|---:|
+| **A** | Référence | **0,639098** | **0,625419** | **0,833060** | 13,068 |
+| B | LR = 0,0003 | 0,616541 | 0,609117 | 0,892707 | 13,358 |
+| C | Dropout = 0,50 | 0,624060 | 0,613860 | 0,839332 | 13,290 |
 
+![Courbes de validation des trois candidats](reports/figures/validation_comparison.png)
 
-**Checkpoint 6.** La macro-F1 donne le même poids aux trois classes et combine
-précision et rappel ; elle permet d'éviter qu'une classe moins bien reconnue soit
-masquée par un bon score global. Le test sert une seule fois après la sélection,
-afin de ne pas adapter le choix du modèle aux exemples censés estimer sa généralisation.
-Une seule graine et 133 images de validation ne suffisent pas à démontrer un avantage
-général d'un hyperparamètre.
+*Figure 1. Macro-F1 et loss de validation par époque, extraites des historiques MLflow. La sélection porte sur les modèles de l'époque 4.*
 
-## 8 — Sélection et test final
+B présente un score final inférieur et une loss plus élevée que A, ce qui est compatible avec une convergence plus lente. Cela ne démontre pas qu'un plus petit taux serait moins bon avec un entraînement plus long.
 
-**Choix gelé avant tout score test : Run A**, `116957febf994489ac92baa3458f3d34`,
-macro-F1 de validation 0,625419. Aucun départage n'est nécessaire. L'accuracy et la
-loss sont aussi favorables à A ; elles n'ont pas remplacé la règle principale.
-Le compromis est un score encore modeste et une comparaison limitée à une seule
-graine : le pipeline est traçable, mais ces essais ne démontrent pas une robustesse
-agronomique en dehors de ce jeu de données.
+L'essai C ne confirme pas un bénéfice du dropout renforcé dans ce protocole. Sa macro-F1 atteint 0,651097 à l'époque 3, puis descend à 0,613860 à l'époque 4 ; A baisse aussi après l'époque 3. On compare les modèles finaux effectivement sauvegardés, sans sélectionner rétrospectivement une époque non livrée.
 
-Seul `selection.run_id` est modifié pour cette étape. Les paramètres courants
-restent ceux de C, comme demandé ; le checkpoint `models/model.pt` est donc celui
-de C. Le test doit charger le modèle de A depuis MLflow, ce qui vérifie effectivement
-la séparation entre dernier entraînement et sélection finale.
+**Checkpoint 6 - Métrique principale.** La macro-F1 combine précision et rappel pour chaque classe, puis donne le même poids aux trois classes. Elle complète l'accuracy globale. Une seule graine et 133 images de validation ne suffisent pas à établir un avantage général d'un hyperparamètre.
 
-La décision a été sauvegardée au commit `2a415b2` avant l'évaluation. La commande
-`dvc repro evaluate` a réutilisé VALIDATE et PREPARE, puis exécuté uniquement
-EVALUATE. Le journal contient `Loading selected model:
-runs:/116957febf994489ac92baa3458f3d34/bean-cnn`.
+<!-- pagebreak -->
 
-Sur les **128 images test** :
+## 5. Sélection du modèle et évaluation finale
 
-| Mesure finale | Valeur |
+### Jalon 8 - Choix gelé sur la validation
+
+Le Run **A** est retenu pour sa macro-F1 de validation **0,625419**. Aucun départage n'est nécessaire ; l'accuracy et la loss finales sont également favorables à A. Son identifiant est enregistré dans `selection.run_id` et la décision est sauvegardée au commit `2a415b2`, avant de scorer le test.
+
+```text
+Run sélectionné : 116957febf994489ac92baa3458f3d34
+Modèle MLflow : runs:/116957febf994489ac92baa3458f3d34/bean-cnn
+```
+
+Les autres réglages restent ceux de C, conformément au guide. Le checkpoint local `models/model.pt` est donc celui de C. EVALUATE recharge A depuis MLflow : le Run sélectionné, et non le dernier checkpoint produit, fait autorité.
+
+L'évaluateur vérifie le statut FINISHED, l'expérience, la taille des images, l'ordre des classes et l'identité des données train/validation. `dvc repro evaluate` réutilise VALIDATE et PREPARE, puis exécute uniquement EVALUATE. Le jeu test est scoré lors d'une seule exécution, après la sélection.
+
+| Mesure sur 128 images test | Résultat |
+|---|---:|
+| Accuracy | **0,6484375 (64,84 %)** |
+| Macro-F1 | **0,6444771 (64,45 %)** |
+| Images correctement classées | **83 / 128** |
+
+![Matrice de confusion du modèle sélectionné](reports/test_confusion_matrix.png)
+
+*Figure 2. Test final du Run A : effectifs à gauche et rappel par classe à droite. Les lignes représentent les classes réelles et les colonnes les prédictions.*
+
+Le modèle reconnaît correctement 23/43 images `angular_leaf_spot`, 26/43 `bean_rust` et 34/42 `healthy`. La classe saine est mieux reconnue ; les confusions entre maladies et feuilles saines limitent encore la qualité du modèle.
+
+**Pourquoi réserver le test ?** Consulter ses scores pour régler ou sélectionner les candidats adapterait les décisions à cet ensemble et biaiserait l'estimation finale. Aucun réglage n'a été modifié en fonction du score test.
+
+Le score reste modeste, et le protocole ne démontre pas une robustesse agronomique hors du jeu fourni. Une comparaison multi-graines ou plus longue constituerait une étude distincte, avec un protocole fixé avant toute nouvelle utilisation du test.
+
+<!-- pagebreak -->
+
+## 6. Traçabilité, vérifications et accès au rendu
+
+### Identifiants et environnement des expériences
+
+| Run | Identifiant MLflow | Commit avant entraînement |
+|---|---|---|
+| A | `116957febf994489ac92baa3458f3d34` | `c9ee6e6` |
+| B | `37c50006d9d548aba01e852501fa6aa6` | `ae98ef8` |
+| C | `ed08edffe9c248df894db2ec166df2d0` | `997604d` |
+
+Les trois Runs sont FINISHED et partagent l'identité des données préparées ci-dessous. Elle est calculée à partir des manifestes et inclut les empreintes des images préparées.
+
+```text
+8fa943ff6c17a3c874d2b152e9d7980602a5cd50c0d8156625bd00590a3d8c6c
+```
+
+Les manifestes indiquent Python 3.12.14, Torch 2.11.0, torchvision 0.26.0, DVC 3.67.1 et MLflow 3.17.1, sur macOS ARM64, dispositif CPU. Les réglages et versions détaillés sont disponibles dans `reports/runs/A`, `B` et `C`.
+
+Le drapeau Git `dirty=true` est conservé dans les trois manifestes. Pour A, des sorties de PREPARE et `dvc.lock` n'étaient pas encore commitées ; pour B et C, DVC retire les rapports de sortie suivis dans Git avant TRAIN. Les commits de code et de configuration restent identifiés. Les commits automatiques utilisent l'identité technique `AI53 Lab`.
+
+### Vérifications et preuves
+
+Les **19 tests du cours passent**. Le contrôle d'environnement est validé ; DVC indique que les données et le pipeline sont à jour. Le CNN, les tests, les modules fournis hors fonctions à compléter, `pyproject.toml` et `uv.lock` sont inchangés octet pour octet ; les empreintes de contrôle sont conservées.
+
+| Preuve | Emplacement dans le dépôt |
 |---|---|
-| Accuracy | 0,6484375 (64,84 %) |
-| Macro-F1 | 0,6444771 (64,45 %) |
-| Run évalué | `116957febf994489ac92baa3458f3d34` |
+| Qualité et préparation des données | `reports/data_quality.json`, `reports/data_summary.json` |
+| Paramètres, scores et séries des trois Runs | `reports/experiment_comparison.json` |
+| Courbes, résumés et provenance de chaque Run | `reports/runs/A`, `reports/runs/B`, `reports/runs/C` |
+| Recalculs DVC, tests et fichiers préservés | `reports/evidence/` |
+| Scores et matrice du test final | `reports/test_metrics.json`, `reports/test_confusion_matrix.png` |
 
-Le fichier `reports/test_metrics.json` identifie bien A et l'identité des données
-attendue. Le modèle a été rechargé depuis MLflow avec son code et ses métadonnées ;
-les vérifications de statut, expérience, image_size, classes et identité ont réussi.
-Le jeu test n'a été scoré qu'après la sélection, au cours d'une seule exécution
-EVALUATE. Ces résultats sont conservés tels quels, sans ajustement ultérieur. La matrice
-inspectée montre 23/43 bonnes prédictions pour angular_leaf_spot, 26/43 pour
-bean_rust et 34/42 pour healthy, soit 83/128 au total. La classe healthy est mieux
-reconnue ; les confusions restantes limitent la qualité du modèle.
+### Remise et continuité en Phase 2
 
-## État de remise
+Le rendu comprend l'URL du dépôt, ce rapport en Markdown et sa version PDF. Le code, les preuves et l'historique sont consultables sur GitHub. Les images, caches et données MLflow restent hors de l'historique Git ; le remote DVC est local et ne se récupère pas par un simple clone.
 
-Le rendu comprend ce rapport et le dépôt Git, avec un commit par jalon et les
-preuves dans `reports/evidence/`. Les trois modèles et leurs enregistrements MLflow
-sont conservés pour Phase 2. Le remote DVC est local et doit être conservé avec le
-projet. Les tests du cours, le CNN, les modules fournis hors TODO, le pyproject et
-le verrou sont inchangés octet pour octet ; leurs SHA-256 sont enregistrés dans
-`reports/evidence/preserved-course-files.json`.
+Pour la Phase 2, une sauvegarde locale conserve le dépôt, le remote DVC, `mlflow.db` et `mlartifacts/`. Elle a été créée après arrêt du serveur et restaurée dans un dossier indépendant : données DVC, base intègre et trois modèles vérifiés. La procédure est décrite dans [docs/RESTORE_PHASE2.md](docs/RESTORE_PHASE2.md).
 
-Pour B et C aussi, `git.dirty=true` est exact : DVC retire les rapports de sortie
-suivis dans Git avant d'exécuter TRAIN. Les commits de configuration sont respectivement
-`ae98ef8` et `997604d`. Le drapeau n'est pas remplacé artificiellement par un état propre.
+Le modèle attend un tenseur float32 NCHW `(-1, 3, 96, 96)`, avec conversion RGB, resize bilinéaire et normalisation moyenne/écart-type `(0.5, 0.5, 0.5)`. Il renvoie trois logits dans l'ordre `angular_leaf_spot`, `bean_rust`, `healthy`.
 
-Contrôles finaux : **19 tests réussis**, et `dvc status` indique
-`Data and pipelines are up to date`. Les données et checkpoints des commits ont
-été envoyés dans le remote DVC local avec `dvc push --all-commits`. Un remplacement
-local du chemin du remote par son chemin absolu a été nécessaire pour la traversée
-de l'historique ; le chemin relatif portable reste versionné dans `.dvc/config`.
-
-Dépôt GitHub privé de remise : <https://github.com/SpeedTomy/AI53-Phase1-MLOps>.
-Il contient les sources et preuves ; les images et données MLflow restent hors Git.
-Le compte de l'enseignant n'ayant pas été fourni, aucun accès nominatif ne lui a été
-accordé. La sauvegarde complète et sa restauration pour Phase 2 sont décrites dans
-`docs/RESTORE_PHASE2.md`.
+**Références :** guide officiel [AI53 Phase 1](docs/AI53_Phase1_Lab_Guide.pdf) ; notes [MLflow](docs/MLFLOW_API_REFERENCE.md) ; attribution et licence [Beans](DATASET_SOURCE.md).

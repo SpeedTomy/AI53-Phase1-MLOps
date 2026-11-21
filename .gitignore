@@ -20,3 +20,6 @@ models/*.pt
 # SQLite sidecars and local logs
 mlflow.db-*
 *.log
+
+# Report rendering intermediates
+/tmp/
